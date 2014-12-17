@@ -4,8 +4,10 @@
 #include <stdio.h>
 #include "common.h"
 
-#define READ_N 1024
 #define DEBUG 1
+
+#define READ_N 1024
+#define DAMAGED_INDICATOR 0x0ffffff7  /* below this and above 0 is allocated fat entry*/
 
 /*
  * The structure of bootsector copied from tutorial notes.
@@ -67,9 +69,14 @@ int load_info(int fd, struct fat_info *fatfs)
 
         /* noting that sector_size and sectors field is unaligned, it is safer to
          * byte-copy */
-        unsigned int sec_size;
+        unsigned short sec_size;
+        unsigned short sectors_trial;  /* this is trial only */
         memcpy(&sec_size, &(bsec.sector_size), sizeof(unsigned short));
         fatfs->sector_size = sec_size;
+        memcpy(&sectors_trial, &(bsec.sectors), sizeof(unsigned short));
+        fatfs->sectors = (sectors_trial ? sectors_trial : bsec.total_sect);
+        printf("DEBUG: saved sectors %d\n", fatfs->sectors);
+
         memcpy(&(fatfs->sectors), &(bsec.sectors), sizeof(unsigned short));
 
         fatfs->reserved_clusters = bsec.reserved;
@@ -78,7 +85,7 @@ int load_info(int fd, struct fat_info *fatfs)
         fatfs->cluster_size = bsec.cluster_size * sec_size;
 
         fatfs->fat_location = bsec.reserved * sec_size;
-        fatfs->root_location = (bsec.reserved + fatfs->nfats*fatfs->fat_size) * sec_size;
+        fatfs->root_location = bsec.reserved * sec_size + fatfs->nfats*fatfs->fat_size ;
 
         fatfs->fd = fd;
 
@@ -95,20 +102,38 @@ void load_info_more(struct fat_info *fatfs)
         fs->clusters = data_size/fs->cluster_size;
         */
 
-        int data_size = fatfs->sectors*fatfs->sector_size-fatfs->root_location;
-        fatfs->clusters = data_size/fatfs->cluster_size;
+        /*
+         * I have understand what it means after a 5hr of testing ......
+         * Normally you may think total number of clusters is the same as
+         * number of fat entries, BUT IT IS WRONG.
+         * +++++++++++++++++++++++++++++++
+         * Go To Hell FAT32 and Bill Gate$
+         * +++++++++++++++++++++++++++++++
+         * Some of the entries will never be used.  The REAL number of cluster
+         * is the size of data area (area from root directoy) over cluster
+         * size.
+         */
+
+        int data_size = fatfs->sectors*(fatfs->sector_size)-fatfs->root_location;
+        fatfs->clusters = data_size/(fatfs->cluster_size);
 
         uint32_t buf[READ_N];  /* This will be an array storing fat entries */
 
         if ((fatfs->fat_size % ENTRY_SIZE) != 0)
                 fprintf(stderr, "Fatsize not multiple of 32bits, may be corrupted.\n");
-        
-        int total_entries = fatfs->fat_size / ENTRY_SIZE;
+
+        /*
+         * refer to dosfsck fat.c line 75 the effective number of entries is +2
+         * don't askme why
+         */
+        int total_entries = fatfs->clusters + 2;
 #if DEBUG
         printf("DEBUG total cluster: %d\n", fatfs->clusters);
+        printf("DEBUG DAMAGED value: %d\n", DAMAGED_INDICATOR);
 #endif
-        int got;
-        int free;
+        unsigned int got;
+        unsigned int free;
+        unsigned int allocated;
         for (int i=2; i < total_entries; i+=READ_N) {
                 if ((total_entries - i) < READ_N)
                         got = get_fatentries(fatfs, &buf, i, total_entries - i);
@@ -118,12 +143,16 @@ void load_info_more(struct fat_info *fatfs)
                 for (int j=0; j < got; j++) {
                         if (buf[j] == 0)
                                 free++;
+                        else if (buf[j] != DAMAGED_INDICATOR)
+                                allocated++;
 #if DEBUG
                         else
-                                printf("nonfree at %dth\n", i+j);
+                                printf("nonfree at %dth cluster, value %d\n",
+                                                i+j, buf[j]);
 #endif
                 }
         }
 
         fatfs->free_clusters = free;
+        fatfs->allocated_clusters = allocated;
 }

@@ -60,10 +60,11 @@ void print_info(struct fat_info *fatfs)
                 {"bytes per sector", fatfs->sector_size},
                 {"sectors per cluster", fatfs->cluster_size / fatfs->sector_size},
                 {"reserved sectors", fatfs->reserved_clusters},
+#if DEBUG
                 {"DEBUG fatsize", fatfs->fat_size},
-                /* not implemented yet
-                {"allocated clusters", XXX},
-                */
+                {"DEBUG sectors", fatfs->sectors},
+#endif
+                {"allocated clusters", fatfs->allocated_clusters},
                 {"free clusters", fatfs->free_clusters},
         };
 
