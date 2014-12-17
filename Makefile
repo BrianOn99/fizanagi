@@ -3,10 +3,14 @@ vpath %.h src
 
 name = fizanagi 
 
-CPPFLAGS = -g --std=gnu99 -I.
+CPPFLAGS = -g --std=gnu99 -I src
 
-$(name): main.c
-	gcc -g $^ -o $@
+$(name): main.c common.o fatinfo.o
+	gcc $(CPPFLAGS) $^ -o $@
+
+common.o: common.h
+
+fatinfo.o: fatinfo.h
 
 .PHONY: clean
 
