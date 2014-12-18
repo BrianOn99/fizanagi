@@ -36,7 +36,7 @@ int main(int argc, char **argv)
         parse_options(argc, argv);
 
 #if DEBUG
-        printf("%d\n", action);
+        printf("action: %d\n", action);
         if (target)
                 printf("target: %s\n", target);
         if (dest)
@@ -49,10 +49,13 @@ int main(int argc, char **argv)
         
         struct fat_info fatfs;
         load_info(fd, &fatfs);
-        load_info_more(&fatfs);
 
-        print_info(&fatfs);
-        lsdir(&fatfs, fatfs.root_cluster);
+        if (action == info) {
+                load_info_more(&fatfs);
+                print_info(&fatfs);
+        } else if (action == list) {
+                lsdir(&fatfs, fatfs.root_cluster);
+        }
 }
 
 void print_info(struct fat_info *fatfs)

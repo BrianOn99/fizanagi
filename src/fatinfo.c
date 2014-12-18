@@ -75,7 +75,6 @@ int load_info(int fd, struct fat_info *fatfs)
         fatfs->sector_size = sec_size;
         memcpy(&sectors_trial, &(bsec.sectors), sizeof(unsigned short));
         fatfs->sectors = (sectors_trial ? sectors_trial : bsec.total_sect);
-        printf("DEBUG: saved sectors %d\n", fatfs->sectors);
 
         memcpy(&(fatfs->sectors), &(bsec.sectors), sizeof(unsigned short));
 
@@ -93,6 +92,11 @@ int load_info(int fd, struct fat_info *fatfs)
         //fatfs->free_clusters = count_free(fats);
 }
 
+/*
+ * set fatfs->[clusters, freecluaters, allocatedclusters]
+ * these are not needed for file recovery, and this function need heavy
+ * computation.  So, it only called  with -i command line arg passed.
+ */
 void load_info_more(struct fat_info *fatfs)
 {
         /* from dosfsck boot.c
@@ -133,6 +137,7 @@ void load_info_more(struct fat_info *fatfs)
          */
         int total_entries = fatfs->clusters + 2;
 #if DEBUG
+        printf("DEBUG sectors %d\n", fatfs->sectors);
         printf("DEBUG total cluster: %d\n", fatfs->clusters);
         printf("DEBUG DAMAGED value: %d\n", DAMAGED_INDICATOR);
 #endif

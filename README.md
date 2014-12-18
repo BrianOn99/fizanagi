@@ -6,15 +6,15 @@ recover 1 cluster file from fat32
 ## Functionality
 * show file system info +OK+
 * list root directory 
-** sub directory +OK+
-** (8.3name) & info +OK+
-** (long file name) & info +<b>identify only</b>+
-** root more than 1 cluster +<b>none</b>
+ * sub directory +OK+
+ * (8.3name) & info +OK+
+ * (long file name) & info +<b>identify only</b>+
+ * root more than 1 cluster +<b>none</b>
 * file recovery +<b>none</b>+
-** search +<b>none</b>
-** dump out +<b>none</b>
-** identify ambiguity +<b>none</b>+
-** long file name +<b>none</b>+
+ * search +<b>none</b>
+ * dump out +<b>none</b>
+ * identify ambiguity +<b>none</b>+
+ * long file name +<b>none</b>+
 
 ## Handy command
 ```sh
@@ -29,4 +29,4 @@ Some algorith and structure from
 Thus it is GPL3
 
 ## 感想
-食屎啦BillGate
+食屎啦BillGate$
