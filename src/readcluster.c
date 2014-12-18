@@ -22,6 +22,10 @@ unsigned int nextcluster(struct fat_info *fatfs, unsigned int index)
         return next;
 }
 
+/*
+ * copy (inclusive) until 0x20 is met, return src pointer to 0x20.
+ */
+
 char *strcpyX20(char *dest, char *src, int maxlen)
 {
         while (maxlen-- && (*dest = *src) != 0x20 )
@@ -47,9 +51,18 @@ int extract_8d3name(char *name, struct dirent *dir)
         return 0;
 }
 
-/*
- * copy (inclusive) until 0x20 is met, return src pointer to 0x20.
- */
+unsigned int extract_clustno(struct dirent *de)
+{
+        return (de->starthi << 16) + de->start;
+}
+
+enum dirent_type gettype(struct dirent *de)
+{
+        char attr = de->attr;
+        return (attr == '\x20') ? DIRECTORY : \
+               (attr == '\x0f') ? LFN : \
+                                 NORMALFILE;
+}
 
 /* ********************************
  * iterator section
@@ -102,17 +115,30 @@ struct dirent * iterdirent(struct iterstate *state)
 
 void lsdir(struct fat_info *fatfs, unsigned int cluster_i)
 {
-        char name[11];
         struct dirent *nextdirent;
         struct iterstate *iterator = init_iter(fatfs, cluster_i);
-        while (1) {
+        printf("%4s%-20s%-10s%-10s%s\n", "", "8.3name", "size", "#cluster", "type");
+        for (int i=0; ; i++) {
                 nextdirent = iterdirent(iterator);
                 if (nextdirent == NULL) {
                         free(iterator);
                         return;
                 }
 
+                char countstr[3]; /* declaration inside loop??? gcc will optimize it */
+                char clusstr[10];
+                char name[11];
+                int  n;
+
                 extract_8d3name(name, nextdirent);
-                printf("name: %s\n", name);
+
+                snprintf(countstr, sizeof(countstr), "%d,", i);
+                if (n = extract_clustno(nextdirent))
+                        snprintf(clusstr, sizeof(clusstr), "%-10d,", n);
+                else
+                        snprintf(clusstr, sizeof(clusstr), "%-10s,", "none");
+
+                printf("%-4s%-20s%-10d%-10s%d\n", \
+                        countstr, name, nextdirent->size, clusstr, gettype(nextdirent));
         }
 }

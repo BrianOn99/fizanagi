@@ -26,6 +26,8 @@ struct iterstate {
         struct dirent dir[];
 };
 
+enum dirent_type { LFN, DIRECTORY, NORMALFILE };
+
 struct iterstate *init_iter(struct fat_info *fatfs, unsigned int cluster_i);
 struct dirent * iterdirent(struct iterstate *state);
 void readcluster(struct fat_info *fatfs, void *buf, unsigned int index);
