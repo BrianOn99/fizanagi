@@ -6,6 +6,7 @@
 #include "common.h"
 #include "readcluster.h"
 
+#define DEBUG 1
 #define DIRENT_SIZE 32
 
 void readcluster(struct fat_info *fatfs, void *buf, unsigned int index)
@@ -37,14 +38,14 @@ char *strcpyX20(char *dest, char *src, int maxlen)
  * extract the file name from a directory entry.
  * TODO: handle the fucking LFN
  */
-int extract_8d3name(char *name, struct dirent *dir)
+int extract_8d3name(struct dirent *de, char *name)
 {
-        char *destend = strcpyX20(name, dir->name, 8);
+        char *destend = strcpyX20(name, de->name, 8);
 
-        if (dir->ext[0] != '\x20') {
+        if (de->ext[0] != '\x20') {
                 *destend = '.';
                 destend++;
-                destend = strcpyX20(destend, dir->ext, 3);
+                destend = strcpyX20(destend, de->ext, 3);
         }
 
         *destend = '\0';
@@ -59,9 +60,10 @@ unsigned int extract_clustno(struct dirent *de)
 enum dirent_type gettype(struct dirent *de)
 {
         char attr = de->attr;
-        return (attr == '\x20') ? DIRECTORY : \
+        return (attr == '\x10') ? DIRECTORY : \
                (attr == '\x0f') ? LFN : \
-                                 NORMALFILE;
+               (attr == '\x20') ? NORMALFILE : \
+                                  NOTCARE ;
 }
 
 /* ********************************
@@ -112,6 +114,45 @@ struct dirent * iterdirent(struct iterstate *state)
  * End iterator section
  * ******************************** */
 
+/* 
+ * get normalized name: no matter 8.3 or LFN
+ */
+void get_normname(struct dirent *de, char *backname)
+{
+        /* TODO: handle LFN */
+        extract_8d3name(de, backname);
+}
+
+struct dirent *searchname(struct fat_info *fatfs, unsigned int cluster_i,
+                          char *given_name)
+{
+        struct dirent *nextdirent;
+        struct iterstate *iterator = init_iter(fatfs, cluster_i);
+        char normname[255];
+
+        while (1) {
+                nextdirent = iterdirent(iterator);
+                if (!nextdirent)
+                        break;
+                if (gettype(nextdirent) != NORMALFILE)
+                        continue;
+
+                get_normname(nextdirent, normname);
+                if (strcmp(normname+1, given_name+1) == 0) {
+                        /* matched (maybe deleted) */
+#if DEBUG
+                        printf("DEBUG: found ?%s\n", normname + 1);
+#endif
+                        /* TODO search more dirent (ambiguity) */
+                        free(iterator);
+                        return nextdirent;
+                }
+        }
+
+        return NULL;
+}
+
+
 
 void lsdir(struct fat_info *fatfs, unsigned int cluster_i)
 {
@@ -130,7 +171,7 @@ void lsdir(struct fat_info *fatfs, unsigned int cluster_i)
                 char name[11];
                 int  n;
 
-                extract_8d3name(name, nextdirent);
+                extract_8d3name(nextdirent, name);
 
                 snprintf(countstr, sizeof(countstr), "%d,", i);
                 if (n = extract_clustno(nextdirent))

@@ -55,6 +55,8 @@ int main(int argc, char **argv)
                 print_info(&fatfs);
         } else if (action == list) {
                 lsdir(&fatfs, fatfs.root_cluster);
+        } else if (action == recover) {
+                searchname(&fatfs, fatfs.root_cluster, target);
         }
 }
 
