@@ -1,12 +1,20 @@
+#define _XOPEN_SOURCE 500  /* need this to declare pread */
+
 #include <errno.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include "common.h"
 
-void exit_error(int s, char *msg)
+void exit_perror(int s, char *msg)
 {
         perror(msg);
+        exit(s);
+}
+
+void exit_error(int s, char *msg)
+{
+        fprintf(stdout, msg);
         exit(s);
 }
 
@@ -16,7 +24,7 @@ void die_if_readerr(int ret, size_t size)
                 fprintf(stderr, "sread: eof reached, there is a bug or fs corrupted.");
                 exit(1);
         } else if (ret == -1 || ret < size) {
-                exit_error(1, "sread");
+                exit_perror(1, "sread");
         }
 }
 

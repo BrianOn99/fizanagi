@@ -63,7 +63,7 @@ int load_info(int fd, struct fat_info *fatfs)
 {
         struct boot_sector bsec;
         if (sread(fd, &bsec, sizeof(bsec)) == -1)
-                exit_error(1, "read boot sector");
+                exit_perror(1, "read boot sector");
 
         fatfs->nfats = bsec.fats;
 
@@ -85,7 +85,8 @@ int load_info(int fd, struct fat_info *fatfs)
         fatfs->cluster_size = bsec.cluster_size * sec_size;
 
         fatfs->fat_location = bsec.reserved * sec_size;
-        fatfs->root_location = bsec.reserved * sec_size + fatfs->nfats*fatfs->fat_size ;
+        fatfs->cluster_start = bsec.reserved * sec_size + fatfs->nfats*fatfs->fat_size ;
+        fatfs->root_cluster = bsec.root_cluster;
 
         fatfs->fd = fd;
 
@@ -114,7 +115,7 @@ void load_info_more(struct fat_info *fatfs)
          * size.
          */
 
-        int data_size = fatfs->sectors*(fatfs->sector_size)-fatfs->root_location;
+        int data_size = fatfs->sectors*(fatfs->sector_size)-fatfs->cluster_start;
         fatfs->clusters = data_size/(fatfs->cluster_size);
 
         uint32_t buf[READ_N];  /* This will be an array storing fat entries */
@@ -125,6 +126,10 @@ void load_info_more(struct fat_info *fatfs)
         /*
          * refer to dosfsck fat.c line 75 the effective number of entries is +2
          * don't askme why
+         * OK, after googling, there is no cluster #0 and #1,
+         * that means fat entry #0 #1 contain rubbish, and the 1st clustter is
+         * indexed 1 in the fat.
+         * still, dont ask why
          */
         int total_entries = fatfs->clusters + 2;
 #if DEBUG

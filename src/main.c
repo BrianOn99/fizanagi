@@ -5,7 +5,8 @@
 #include <fcntl.h>
 #include "common.h"
 #include "fatinfo.h"
-#define DEBUG 0
+#include "readcluster.h"
+#define DEBUG 1
 
 int parse_options(int argc, char **argv);
 void print_info(struct fat_info *fatfs);
@@ -44,13 +45,14 @@ int main(int argc, char **argv)
         printf("device: %s\n", device);
 #endif
         if ((fd = open(device, O_RDONLY)) == -1)
-                exit_error(1, "open");
+                exit_perror(1, "open");
         
         struct fat_info fatfs;
         load_info(fd, &fatfs);
         load_info_more(&fatfs);
 
         print_info(&fatfs);
+        lsdir(&fatfs, fatfs.root_cluster);
 }
 
 void print_info(struct fat_info *fatfs)
@@ -63,6 +65,9 @@ void print_info(struct fat_info *fatfs)
 #if DEBUG
                 {"DEBUG fatsize", fatfs->fat_size},
                 {"DEBUG sectors", fatfs->sectors},
+                {"DEBUG cluster start", fatfs->cluster_start},
+                {"DEBUG root cluster start", fatfs->cluster_start + \
+                        fatfs->cluster_size * (fatfs->root_cluster - 2)},
 #endif
                 {"allocated clusters", fatfs->allocated_clusters},
                 {"free clusters", fatfs->free_clusters},
