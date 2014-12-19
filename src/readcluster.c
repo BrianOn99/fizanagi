@@ -17,7 +17,7 @@
 void readcluster(struct fat_info *fatfs, void *buf, unsigned int index)
 {
         off_t offset = fatfs->cluster_start + fatfs->cluster_size * (index - 2);
-	printf("reading cluster %d offset %d\n", index, offset);
+	printf("reading cluster %d offset %d\n", index, (int) offset);
         spread(fatfs->fd, buf, fatfs->cluster_size, offset);
 	puts("read "); 
 	fwrite(buf, 10, 1, stdout);
@@ -160,9 +160,9 @@ struct dirent *searchname(struct fat_info *fatfs, unsigned int cluster_i,
         return NULL;
 }
 
-void recover(struct fat_info *fatfs, struct dirent *de)
+void recover(struct fat_info *fatfs, struct dirent *de, char *given_name)
 {
-	int outfd =  open("outfile", O_RDWR | O_CREAT | O_EXCL, 0600);
+	int outfd =  open(given_name, O_RDWR | O_CREAT | O_EXCL, 0600);
 	ftruncate(outfd, fatfs->cluster_size);
 	if (outfd == -1) 
 		exit_perror(1, "opening target ");
@@ -171,6 +171,7 @@ void recover(struct fat_info *fatfs, struct dirent *de)
 	if (outmem == MAP_FAILED)
 		exit_perror(1, "mmap ");
 	readcluster(fatfs, outmem, extract_clustno(de));
+	ftruncate(outfd, de->size);
 	puts("recover "); 
 	fwrite(outmem, 10, 1, stdout);
 	puts("\n");
@@ -182,7 +183,7 @@ void find_n_recover(struct fat_info *fatfs, unsigned int cluster_i,
 {
         struct dirent *founddirent = searchname(fatfs, cluster_i, given_name);
 	if (founddirent != NULL)
-		recover(fatfs, founddirent);
+		recover(fatfs, founddirent, given_name);
 }
 
 int dirent_deleted(struct dirent *de)
