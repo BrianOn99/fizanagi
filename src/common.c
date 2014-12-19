@@ -14,7 +14,8 @@ void exit_perror(int s, char *msg)
 
 void exit_error(int s, char *msg)
 {
-        fprintf(stdout, msg);
+        fputs("Error: ", stderr);
+        fputs(msg, stderr);
         exit(s);
 }
 

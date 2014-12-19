@@ -1,4 +1,4 @@
-# fizangi
+# fizanagi
 
 ## Goal
 recover 1 cluster file from fat32
@@ -18,13 +18,13 @@ recover 1 cluster file from fat32
 
 ## Handy command
 ```sh
-sudo dd if=/dev/zero of=fatsample bs=1M count=128
-sudo mkfs.vfat -s 2 -F 32 fatsample
+dd if=/dev/zero of=fatsample bs=1M count=128
+mkfs.vfat -s 2 -F 32 fatsample
 sudo losetup /dev/loop0 fatsample
 sudo mount /dev/loop0 ./mnt
 ```
 ## Reference
-Some algorith and structure from
+Some algorithm and structure from
 [dosfsck](http://daniel-baumann.ch/software/dosfstools/) 
 Thus it is GPL3
 
