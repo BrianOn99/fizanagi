@@ -28,13 +28,12 @@ void uni2ascii(const unsigned char *unisrc, char *asciidest, int maxlen)
 {
 	for (int i=0; i < maxlen; (i++, asciidest++, unisrc+=2)) {
 		*asciidest = *unisrc;
-		printf("copying %c\n", *asciidest);
 		if (*asciidest == '\0')
 			break;
 	}
 }
 
-void extract_lfn_as_ascii(char *asciidest, void *lfn)
+void extract_lfn(void *lfn, char *asciidest)
 {
 	static unsigned char uniname[CHAR_PER_LFN * 2];
 	copy_lfn_part(uniname, (struct lfn_entry *)lfn);

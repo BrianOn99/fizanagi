@@ -10,6 +10,7 @@
 #include <sys/mman.h>
 #include "common.h"
 #include "readcluster.h"
+#include "mylfn.h"
 
 #define DEBUG 1
 #define DIRENT_SIZE 32
@@ -130,7 +131,11 @@ struct dirent * iterdirent(struct iterstate *state)
 void get_normname(struct dirent *de, char *backname)
 {
         /* TODO: handle LFN */
-        extract_8d3name(de, backname);
+	if (gettype(de) == LFN) {
+		extract_lfn(de, (void *)backname);
+	} else {
+		extract_8d3name(de, backname);
+	}
 }
 
 struct dirent *searchname(struct fat_info *fatfs, unsigned int cluster_i,
@@ -212,7 +217,7 @@ void lsdir(struct fat_info *fatfs, unsigned int cluster_i)
                 char name[11];
                 int  n;
 
-                extract_8d3name(nextdirent, name);
+                get_normname(nextdirent, name);
 
                 snprintf(countstr, sizeof(countstr), "%d,", i);
                 if (n = extract_clustno(nextdirent))

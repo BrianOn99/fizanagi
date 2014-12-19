@@ -9,6 +9,6 @@ int main()
 	if (!f)
 		printf("cnt open fiel\n");
 	fread(buf, 32, 1, f);
-	extract_lfn_as_ascii(name, buf);
+	extract_lfn(buf, name);
 	puts(name);
 }
