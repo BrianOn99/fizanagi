@@ -16,6 +16,8 @@
 
 void readcluster(struct fat_info *fatfs, void *buf, unsigned int index)
 {
+        if (index < 2)
+		exit_error(1, "Illegal to read cluater < 2");
         off_t offset = fatfs->cluster_start + fatfs->cluster_size * (index - 2);
 	printf("reading cluster %d offset %d\n", index, (int) offset);
         spread(fatfs->fd, buf, fatfs->cluster_size, offset);
@@ -160,12 +162,12 @@ struct dirent *searchname(struct fat_info *fatfs, unsigned int cluster_i,
         return NULL;
 }
 
-void recover(struct fat_info *fatfs, struct dirent *de, char *given_name)
+void recover(struct fat_info *fatfs, struct dirent *de, char *out_name)
 {
-	int outfd =  open(given_name, O_RDWR | O_CREAT | O_EXCL, 0600);
+	int outfd =  open(out_name, O_RDWR | O_CREAT | O_EXCL, 0600);
 	ftruncate(outfd, fatfs->cluster_size);
 	if (outfd == -1) 
-		exit_perror(1, "opening target ");
+		exit_error(1, "file already exist, or cannot create file");
 
 	void *outmem = mmap(NULL, fatfs->cluster_size, PROT_WRITE, MAP_SHARED, outfd, 0);
 	if (outmem == MAP_FAILED)
@@ -179,11 +181,11 @@ void recover(struct fat_info *fatfs, struct dirent *de, char *given_name)
 }
 
 void find_n_recover(struct fat_info *fatfs, unsigned int cluster_i,
-                          char *given_name)
+                          char *find_name, char *out_name)
 {
-        struct dirent *founddirent = searchname(fatfs, cluster_i, given_name);
+        struct dirent *founddirent = searchname(fatfs, cluster_i, find_name);
 	if (founddirent != NULL)
-		recover(fatfs, founddirent, given_name);
+		recover(fatfs, founddirent, out_name);
 }
 
 int dirent_deleted(struct dirent *de)

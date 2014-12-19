@@ -33,6 +33,6 @@ struct dirent * iterdirent(struct iterstate *state);
 void readcluster(struct fat_info *fatfs, void *buf, unsigned int index);
 void lsdir(struct fat_info *fatfs, unsigned int cluster_i);
 void find_n_recover(struct fat_info *fatfs, unsigned int cluster_i,
-                          char *given_name);
+                          char *find_name, char *out_name);
 
 #endif
