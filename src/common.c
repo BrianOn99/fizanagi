@@ -16,6 +16,7 @@ void exit_error(int s, char *msg)
 {
         fputs("Error: ", stderr);
         fputs(msg, stderr);
+	fputs("\n", stderr);
         exit(s);
 }
 

@@ -1,8 +1,13 @@
+#define _BSD_SOURCE
+
 #include <stdio.h>
 #include <sys/types.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/mman.h>
 #include "common.h"
 #include "readcluster.h"
 
@@ -12,7 +17,11 @@
 void readcluster(struct fat_info *fatfs, void *buf, unsigned int index)
 {
         off_t offset = fatfs->cluster_start + fatfs->cluster_size * (index - 2);
+	printf("reading cluster %d offset %d\n", index, offset);
         spread(fatfs->fd, buf, fatfs->cluster_size, offset);
+	puts("read "); 
+	fwrite(buf, 10, 1, stdout);
+	puts("\n");
 }
 
 unsigned int nextcluster(struct fat_info *fatfs, unsigned int index)
@@ -152,7 +161,30 @@ struct dirent *searchname(struct fat_info *fatfs, unsigned int cluster_i,
         return NULL;
 }
 
+void recover(struct fat_info *fatfs, struct dirent *de)
+{
+	int outfd =  open("outfile", O_RDWR | O_CREAT | O_EXCL, 0600);
+	ftruncate(outfd, fatfs->cluster_size);
+	if (outfd == -1) 
+		exit_perror(1, "opening target ");
 
+	void *outmem = mmap(NULL, fatfs->cluster_size, PROT_WRITE, MAP_SHARED, outfd, 0);
+	if (outmem == MAP_FAILED)
+		exit_perror(1, "mmap ");
+	readcluster(fatfs, outmem, extract_clustno(de));
+	puts("recover "); 
+	fwrite(outmem, 10, 1, stdout);
+	puts("\n");
+	munmap(outmem, fatfs->cluster_size);
+}
+
+void find_n_recover(struct fat_info *fatfs, unsigned int cluster_i,
+                          char *given_name)
+{
+        struct dirent *founddirent = searchname(fatfs, cluster_i, given_name);
+	if (founddirent != NULL)
+		recover(fatfs, founddirent);
+}
 
 void lsdir(struct fat_info *fatfs, unsigned int cluster_i)
 {
