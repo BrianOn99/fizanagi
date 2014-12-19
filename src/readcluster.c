@@ -101,8 +101,7 @@ struct dirent * iterdirent(struct iterstate *state)
         for (;dir_i < state->count; dir_i++) {
                 switch (dir[dir_i].name[0]) {
                         case '\x00':  /* later i will find whether this is the end */
-                        case (unsigned char)'\xe5':  /* deleted */
-                                continue;
+				continue;
                         case '\x20':
                                 exit_error(-1, "x20 in first byte in file name");
                         default:
@@ -186,6 +185,11 @@ void find_n_recover(struct fat_info *fatfs, unsigned int cluster_i,
 		recover(fatfs, founddirent);
 }
 
+int dirent_deleted(struct dirent *de)
+{
+	return (de->name[0] == (unsigned char) '\xe5');
+}
+
 void lsdir(struct fat_info *fatfs, unsigned int cluster_i)
 {
         struct dirent *nextdirent;
@@ -197,6 +201,8 @@ void lsdir(struct fat_info *fatfs, unsigned int cluster_i)
                         free(iterator);
                         return;
                 }
+		if (dirent_deleted(nextdirent))
+			continue;
 
                 char countstr[3]; /* declaration inside loop??? gcc will optimize it */
                 char clusstr[10];
