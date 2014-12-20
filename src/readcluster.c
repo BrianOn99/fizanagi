@@ -13,7 +13,6 @@
 #include "readcluster.h"
 #include "mylfn.h"
 
-#define DEBUG 1
 #define DIRENT_SIZE 32
 #define MAX_LFN_LEN 255
 
@@ -22,11 +21,8 @@ void readcluster(struct fat_info *fatfs, void *buf, unsigned int index)
         if (index < 2)
 		exit_error(1, "Illegal to read cluater < 2");
         off_t offset = fatfs->cluster_start + fatfs->cluster_size * (index - 2);
-	printf("reading cluster %d offset %d\n", index, (int) offset);
+	DEBUG("reading cluster %d offset %d\n", index, (int) offset);
         spread(fatfs->fd, buf, fatfs->cluster_size, offset);
-	puts("read "); 
-	fwrite(buf, 10, 1, stdout);
-	puts("\n");
 }
 
 unsigned int nextcluster(struct fat_info *fatfs, unsigned int index)
@@ -174,9 +170,7 @@ struct dirent *searchname(struct fat_info *fatfs, unsigned int cluster_i,
 
                 if (strcmp(lfnstr+1, given_name+1) == 0) {
                         /* matched (maybe deleted) */
-#if DEBUG
-                        printf("DEBUG: found ?%s\n", lfnstr + 1);
-#endif
+                        DEBUG("found ?%s\n", lfnstr + 1);
                         /* TODO search more dirent (ambiguity) */
                         free(iterator);
                         return nextdirent;
@@ -201,9 +195,10 @@ void recover(struct fat_info *fatfs, struct dirent *de, char *out_name)
                         exit_perror(1, "mmap ");
                 readcluster(fatfs, outmem, extract_clustno(de));
                 ftruncate(outfd, de->size);
-                puts("recover "); 
+#ifdef _DEBUG
+                printf("recover "); 
                 fwrite(outmem, 10, 1, stdout);
-                puts("\n");
+#endif
                 munmap(outmem, fatfs->cluster_size);
         }
 

@@ -4,8 +4,6 @@
 #include <stdio.h>
 #include "common.h"
 
-#define DEBUG 1
-
 #define READ_N 1024
 #define DAMAGED_INDICATOR 0x0ffffff7  /* below this and above 0 is allocated fat entry*/
 
@@ -136,11 +134,8 @@ void load_info_more(struct fat_info *fatfs)
          * still, dont ask why
          */
         int total_entries = fatfs->clusters + 2;
-#if DEBUG
-        printf("DEBUG sectors %d\n", fatfs->sectors);
-        printf("DEBUG total cluster: %d\n", fatfs->clusters);
-        printf("DEBUG DAMAGED value: %d\n", DAMAGED_INDICATOR);
-#endif
+        DEBUG("sectors %d\n", fatfs->sectors);
+        DEBUG("total cluster: %d\n", fatfs->clusters);
         unsigned int got;
         unsigned int free = 0;
         unsigned int allocated = 0;
@@ -155,11 +150,9 @@ void load_info_more(struct fat_info *fatfs)
                                 free++;
                         else if (buf[j] != DAMAGED_INDICATOR)
                                 allocated++;
-#if DEBUG
                         else
-                                printf("nonfree at %dth cluster, value %d\n",
+                                DEBUG("nonfree at %dth cluster, value %d\n",
                                                 i+j, buf[j]);
-#endif
                 }
         }
 

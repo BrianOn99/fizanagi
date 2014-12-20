@@ -2,8 +2,15 @@
 #define COMMON_H
 
 #include <sys/types.h>
+#include <stdio.h>
 
 #define ENTRY_SIZE 4  /* 32bits is 4 bytes */
+
+#ifdef _DEBUG
+#define DEBUG(format, args...) fprintf(stderr, "[%s:%d] "format, __FILE__, __LINE__, ##args)
+#else
+#define DEBUG(args...)  /* empty macro */
+#endif
 
 struct fat_info {
         int nfats;

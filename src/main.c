@@ -6,7 +6,6 @@
 #include "common.h"
 #include "fatinfo.h"
 #include "readcluster.h"
-#define DEBUG 1
 
 int parse_options(int argc, char **argv);
 void print_info(struct fat_info *fatfs);
@@ -35,15 +34,13 @@ int main(int argc, char **argv)
         int fd;
         parse_options(argc, argv);
 
-#if DEBUG
-        printf("action: %d\n", action);
+        DEBUG("action: %d\n", action);
+        DEBUG("device: %s\n", device);
         if (target)
-                printf("target: %s\n", target);
+                DEBUG("target: %s\n", target);
         if (dest)
-                printf("dest: %s\n", dest);
+                DEBUG("dest: %s\n", dest);
 
-        printf("device: %s\n", device);
-#endif
         if ((fd = open(device, O_RDONLY)) == -1)
                 exit_perror(1, "open");
         
@@ -67,7 +64,7 @@ void print_info(struct fat_info *fatfs)
                 {"bytes per sector", fatfs->sector_size},
                 {"sectors per cluster", fatfs->cluster_size / fatfs->sector_size},
                 {"reserved sectors", fatfs->reserved_clusters},
-#if DEBUG
+#if _DEBUG
                 {"DEBUG fatsize", fatfs->fat_size},
                 {"DEBUG sectors", fatfs->sectors},
                 {"DEBUG cluster start", fatfs->cluster_start},
