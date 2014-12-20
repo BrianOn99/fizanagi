@@ -150,15 +150,25 @@ struct dirent *searchname(struct fat_info *fatfs, unsigned int cluster_i,
 
         while (1) {
                 nextdirent = iterdirent(iterator, lfnstr);
-                if (!nextdirent)
+                if (!nextdirent) {
                         DEBUG("search unsucess\n");
                         break;
+                }
                 if (gettype(nextdirent) != NORMALFILE)
                         continue;
 
-                if (strcmp(lfnstr+1, given_name+1) == 0) {
+                int match;
+                if (lfnstr[0]) {
+                        match = (strcmp(lfnstr+1, given_name+1) == 0);
+                } else {
+                        static char name8d3[11];
+                        extract_8d3name(nextdirent, name8d3);
+                        match = (strcmp(name8d3+1, given_name+1) == 0);
+                }
+
+                if (match) {
                         /* matched (maybe deleted) */
-                        DEBUG("found ?%s\n", lfnstr + 1);
+                        DEBUG("found file\n");
                         /* TODO search more dirent (ambiguity) */
                         break;
                 }
