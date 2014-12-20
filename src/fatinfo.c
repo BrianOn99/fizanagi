@@ -142,8 +142,8 @@ void load_info_more(struct fat_info *fatfs)
         printf("DEBUG DAMAGED value: %d\n", DAMAGED_INDICATOR);
 #endif
         unsigned int got;
-        unsigned int free;
-        unsigned int allocated;
+        unsigned int free = 0;
+        unsigned int allocated = 0;
         for (int i=2; i < total_entries; i+=READ_N) {
                 if ((total_entries - i) < READ_N)
                         got = get_fatentries(fatfs, &buf, i, total_entries - i);
