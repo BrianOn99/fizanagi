@@ -60,7 +60,7 @@ int main(int argc, char **argv)
 void print_info(struct fat_info *fatfs)
 {
         struct tuple { char *desc; int value; } tups[] = {
-                {"FATS", fatfs->nfats},
+                {"FATs", fatfs->nfats},
                 {"bytes per sector", fatfs->sector_size},
                 {"sectors per cluster", fatfs->cluster_size / fatfs->sector_size},
                 {"reserved sectors", fatfs->reserved_clusters},

@@ -20,6 +20,9 @@ void readcluster(struct fat_info *fatfs, void *buf, unsigned int index)
 {
         if (index < 2)
 		exit_error(1, "Illegal to read cluater < 2");
+        else if (fatfs->clusters != 0 && index > fatfs->clusters)
+                exit_error(1, "cluster number too lasrge");
+
         off_t offset = fatfs->cluster_start + fatfs->cluster_size * (index - 2);
 	DEBUG("reading cluster %d offset %d\n", index, (int) offset);
         spread(fatfs->fd, buf, fatfs->cluster_size, offset);
@@ -46,7 +49,6 @@ char *strcpyX20(char *dest, char *src, int maxlen)
 
 /*
  * extract the file name from a directory entry.
- * TODO: handle the fucking LFN
  */
 int extract_8d3name(struct dirent *de, char *name)
 {
@@ -139,31 +141,17 @@ struct dirent *iterdirent(struct iterstate *state, char *name)
  * End iterator section
  * ******************************** */
 
-/* 
- * get normalized name: no matter 8.3 or LFN
- */
-
-/* depracated function
-void get_normname(struct dirent *de, char *backname)
-{
-	if (gettype(de) == LFN) {
-		extract_lfn(de, (void *)backname);
-	} else {
-		extract_8d3name(de, backname);
-	}
-}
-*/
-
 struct dirent *searchname(struct fat_info *fatfs, unsigned int cluster_i,
                           char *given_name)
 {
-        struct dirent *nextdirent;
+        struct dirent *nextdirent = NULL;
         struct iterstate *iterator = init_iter(fatfs, cluster_i, true);
         char lfnstr[MAX_LFN_LEN];
 
         while (1) {
                 nextdirent = iterdirent(iterator, lfnstr);
                 if (!nextdirent)
+                        DEBUG("search unsucess\n");
                         break;
                 if (gettype(nextdirent) != NORMALFILE)
                         continue;
@@ -172,12 +160,12 @@ struct dirent *searchname(struct fat_info *fatfs, unsigned int cluster_i,
                         /* matched (maybe deleted) */
                         DEBUG("found ?%s\n", lfnstr + 1);
                         /* TODO search more dirent (ambiguity) */
-                        free(iterator);
-                        return nextdirent;
+                        break;
                 }
         }
 
-        return NULL;
+        free(iterator);
+        return nextdirent;
 }
 
 void recover(struct fat_info *fatfs, struct dirent *de, char *out_name)
@@ -222,23 +210,22 @@ void lsdir(struct fat_info *fatfs, unsigned int cluster_i)
 {
         struct dirent *nextdirent;
         struct iterstate *iterator = init_iter(fatfs, cluster_i, false);
-        printf("%4s%-15s%-10s%-10s%-6s%-20s\n", "", "8.3name", "size", "#cluster", "type", "lfn");
-        for (int i=0; ; i++) {
-                static char lfnstr[MAX_LFN_LEN];
-                nextdirent = iterdirent(iterator, lfnstr);
-                if (nextdirent == NULL) {
-                        free(iterator);
-                        return;
-                }
+        char lfnstr[MAX_LFN_LEN];
+        char countstr[3];
+        char clusstr[10];
+        char name8d3[11];
+        int  n;
 
-                char countstr[3]; /* declaration inside loop??? gcc will optimize it */
-                char clusstr[10];
-                char name8d3[11];
-                int  n;
+        printf("%4s%-15s%-10s%-10s%-6s%-20s\n",
+               "", "8.3name", "size", "#cluster", "type", "lfn");
+
+        int i = 0;
+        nextdirent = iterdirent(iterator, lfnstr);
+        for (/**/; nextdirent; nextdirent = iterdirent(iterator, lfnstr)) {
 
                 extract_8d3name(nextdirent, name8d3);
 
-                snprintf(countstr, sizeof(countstr), "%d,", i);
+                snprintf(countstr, sizeof(countstr), "%d,", i++);
                 if (n = extract_clustno(nextdirent))
                         snprintf(clusstr, sizeof(clusstr), "%-10d,", n);
                 else
@@ -247,4 +234,6 @@ void lsdir(struct fat_info *fatfs, unsigned int cluster_i)
                 printf("%-4s%-15s%-10d%-10s%-6d%-20s\n", \
                         countstr, name8d3, nextdirent->size, clusstr, gettype(nextdirent), lfnstr);
         }
+
+        free(iterator);
 }

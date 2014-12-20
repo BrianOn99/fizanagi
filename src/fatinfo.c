@@ -87,16 +87,6 @@ int load_info(int fd, struct fat_info *fatfs)
 
         fatfs->fd = fd;
 
-        //fatfs->free_clusters = count_free(fats);
-}
-
-/*
- * set fatfs->[clusters, freecluaters, allocatedclusters]
- * these are not needed for file recovery, and this function need heavy
- * computation.  So, it only called  with -i command line arg passed.
- */
-void load_info_more(struct fat_info *fatfs)
-{
         /* from dosfsck boot.c
         fs->root_entries = GET_UNALIGNED_W(b.dir_entries);
         fs->data_start = fs->root_start+ROUND_TO_MULTIPLE(fs->root_entries <<
@@ -119,7 +109,15 @@ void load_info_more(struct fat_info *fatfs)
 
         int data_size = fatfs->sectors*(fatfs->sector_size)-fatfs->cluster_start;
         fatfs->clusters = data_size/(fatfs->cluster_size);
+}
 
+/*
+ * set fatfs->[clusters, freecluaters, allocatedclusters]
+ * these are not needed for file recovery, and this function need heavy
+ * computation.  So, it only called  with -i command line arg passed.
+ */
+void load_info_more(struct fat_info *fatfs)
+{
         uint32_t buf[READ_N];  /* This will be an array storing fat entries */
 
         if ((fatfs->fat_size % ENTRY_SIZE) != 0)
@@ -151,7 +149,7 @@ void load_info_more(struct fat_info *fatfs)
                         else if (buf[j] != DAMAGED_INDICATOR)
                                 allocated++;
                         else
-                                DEBUG("nonfree at %dth cluster, value %d\n",
+                                DEBUG("strangr at %dth cluster, value %d\n",
                                                 i+j, buf[j]);
                 }
         }
