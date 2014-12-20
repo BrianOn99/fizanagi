@@ -141,17 +141,17 @@ struct dirent *iterdirent(struct iterstate *state, char *name)
  * End iterator section
  * ******************************** */
 
-struct dirent *searchname(struct fat_info *fatfs, unsigned int cluster_i,
-                          char *given_name)
+int searchname(struct fat_info *fatfs, unsigned int cluster_i,
+                  char *given_name, struct dirent back_dirents[], int len)
 {
         struct dirent *nextdirent = NULL;
         struct iterstate *iterator = init_iter(fatfs, cluster_i, true);
         char lfnstr[MAX_LFN_LEN];
+        int found = 0;
 
         while (1) {
                 nextdirent = iterdirent(iterator, lfnstr);
                 if (!nextdirent) {
-                        DEBUG("search unsucess\n");
                         break;
                 }
                 if (gettype(nextdirent) != NORMALFILE)
@@ -169,13 +169,14 @@ struct dirent *searchname(struct fat_info *fatfs, unsigned int cluster_i,
                 if (match) {
                         /* matched (maybe deleted) */
                         DEBUG("found file\n");
-                        /* TODO search more dirent (ambiguity) */
-                        break;
+                        if (found >= len) break;
+                        memcpy(&back_dirents[found], nextdirent, DIRENT_SIZE);
+                        found++;
                 }
         }
 
         free(iterator);
-        return nextdirent;
+        return found;
 }
 
 void recover(struct fat_info *fatfs, struct dirent *de, char *out_name)
@@ -192,12 +193,12 @@ void recover(struct fat_info *fatfs, struct dirent *de, char *out_name)
                 if (outmem == MAP_FAILED)
                         exit_perror(1, "mmap ");
                 readcluster(fatfs, outmem, extract_clustno(de));
-                ftruncate(outfd, de->size);
 #ifdef _DEBUG
                 printf("recover "); 
                 fwrite(outmem, 10, 1, stdout);
 #endif
                 munmap(outmem, fatfs->cluster_size);
+                ftruncate(outfd, de->size);
         }
 
         close(outfd);
@@ -206,9 +207,30 @@ void recover(struct fat_info *fatfs, struct dirent *de, char *out_name)
 void find_n_recover(struct fat_info *fatfs, unsigned int cluster_i,
                           char *find_name, char *out_name)
 {
-        struct dirent *founddirent = searchname(fatfs, cluster_i, find_name);
-	if (founddirent != NULL)
-		recover(fatfs, founddirent, out_name);
+        struct dirent found_dirents[10];
+        int count = searchname(fatfs, cluster_i, find_name, found_dirents, 10);
+        if (count == 0)
+                printf("nothing found\n");
+        else if (count == 1)
+		recover(fatfs, &found_dirents[0], out_name);
+        else {
+
+#ifndef DUMBMODE
+                printf("There is more than one file with indistinguishable name\n");
+                printf("recover all of them? (y/N)");
+
+                if (getc(stdin) == 'y') {
+                        char out_suffix[13];
+                        for (int i=0; i < count; i++) {
+                                snprintf(out_suffix, 13, "%s_%d", out_name, i);
+                                recover(fatfs, &found_dirents[i], out_suffix);
+                        }
+                }
+
+#else
+                printf("ambiguious\n");
+#endif
+        }
 }
 
 int dirent_deleted(struct dirent *de)

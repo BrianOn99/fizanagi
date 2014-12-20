@@ -10,11 +10,15 @@ recover 1 cluster file from fat32
  * (8.3name) & info +OK+
  * (long file name) & info +OK+
  * root more than 1 cluster +<b>none</b>+
-* file recovery (1 cluster at root) +<b>none</b>+
+* file recovery (1 cluster at root)
  * search +OK+
  * dump out +OK>
- * identify ambiguity +<b>none</b>+
+ * identify ambiguity +OK+
   * long file name ambiguity+<b>none</b>+
+* *extra*
+ * recover multiple file +OK+
+ * list deleted file +<b>none</b>+
+   (what is the use if you even dont know the name of deleted file?) 
 
 ## Handy command
 ```sh
