@@ -28,12 +28,19 @@ void readcluster(struct fat_info *fatfs, void *buf, unsigned int index)
         spread(fatfs->fd, buf, fatfs->cluster_size, offset);
 }
 
-unsigned int nextcluster(struct fat_info *fatfs, unsigned int index)
+bool occupied(uint32_t cluster_i, struct fat_info *fatfs)
 {
-        uint32_t next;
-        off_t offset = fatfs->fat_location + sizeof(uint32_t) * index;
-        spread(fatfs->fd, &next, sizeof(next), offset);
-        return next;
+        struct fat_iterstate *state = malloc(sizeof(struct fat_iterstate));
+        init_iterfat(state, fatfs);
+        int64_t fatent;
+
+        while ((fatent = iterfat(state)) != -1) {
+                if (fatent == cluster_i)
+                        return true;
+        }
+
+        free(state);
+        return false;
 }
 
 /*
@@ -195,6 +202,10 @@ int searchname(struct fat_info *fatfs, unsigned int cluster_i,
 void recover(struct fat_info *fatfs, struct dirent *de, char *out_name)
 {
         printf("recovering \"%s\" with size %d\n", out_name, de->size);
+        if (occupied(extract_clustno(de), fatfs)) {
+                printf("requested file is overritten\n");
+                return;
+        }
 
 	int outfd =  open(out_name, O_RDWR | O_CREAT | O_EXCL, 0600);
         if (outfd == -1) 
