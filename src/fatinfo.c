@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "common.h"
 
 #define READ_N 1024
@@ -135,25 +136,23 @@ void load_info_more(struct fat_info *fatfs)
         DEBUG("sectors %d\n", fatfs->sectors);
         DEBUG("total cluster: %d\n", fatfs->clusters);
         unsigned int got;
-        unsigned int free = 0;
+        unsigned int freecl = 0;
         unsigned int allocated = 0;
-        for (int i=2; i < total_entries; i+=READ_N) {
-                if ((total_entries - i) < READ_N)
-                        got = get_fatentries(fatfs, &buf, i, total_entries - i);
-                else
-                        got = get_fatentries(fatfs, &buf, i, READ_N);
 
-                for (int j=0; j < got; j++) {
-                        if (buf[j] == 0)
-                                free++;
-                        else if (buf[j] != DAMAGED_INDICATOR)
-                                allocated++;
-                        else
-                                DEBUG("strangr at %dth cluster, value %d\n",
-                                                i+j, buf[j]);
-                }
+        struct fat_iterstate *state = malloc(sizeof(struct fat_iterstate));
+        init_iterfat(state, fatfs);
+        int64_t fatent;
+
+        while ((fatent = iterfat(state)) != -1) {
+                if (fatent == 0)
+                        freecl++;
+                else if (fatent != DAMAGED_INDICATOR)
+                        allocated++;
+                else
+                        DEBUG("strange at cluster, value %d\n", fatent);
         }
 
-        fatfs->free_clusters = free;
+        free(state);
+        fatfs->free_clusters = freecl;
         fatfs->allocated_clusters = allocated;
 }
