@@ -2,6 +2,7 @@
 #define READCL_H
 
 #include <asm/types.h>
+#include <stdbool.h>
 
 struct dirent {
     __u8	name[8],ext[3];	/* name and extension */
@@ -21,6 +22,7 @@ struct iterstate {
         unsigned int dir_i; /* current index in dir[] , internal use */
         struct fat_info *fatfs;
         int count;
+        bool allow_deleted;
         /* zero length array, should be same size as cluster, C99 extension
          * this will save all dirent in the cluster */
         struct dirent dir[];
@@ -28,8 +30,9 @@ struct iterstate {
 
 enum dirent_type { LFN, DIRECTORY, NORMALFILE, NOTCARE };
 
-struct iterstate *init_iter(struct fat_info *fatfs, unsigned int cluster_i);
-struct dirent * iterdirent(struct iterstate *state);
+struct iterstate *init_iter(struct fat_info *fatfs,
+                            unsigned int cluster_i, bool allow_deleted);
+struct dirent *iterdirent(struct iterstate *state, char *name);
 void readcluster(struct fat_info *fatfs, void *buf, unsigned int index);
 void lsdir(struct fat_info *fatfs, unsigned int cluster_i);
 void find_n_recover(struct fat_info *fatfs, unsigned int cluster_i,

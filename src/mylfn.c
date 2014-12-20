@@ -24,18 +24,18 @@ static void copy_lfn_part(unsigned char *dst, struct lfn_entry * lfn)
 }
 
 
-void uni2ascii(const unsigned char *unisrc, char *asciidest, int maxlen)
+int uni2ascii(const unsigned char *unisrc, char *asciidest, int maxlen)
 {
 	for (int i=0; i < maxlen; (i++, asciidest++, unisrc+=2)) {
 		*asciidest = *unisrc;
 		if (*asciidest == '\0')
-			break;
+			return i;
 	}
 }
 
-void extract_lfn(void *lfn, char *asciidest)
+int extract_lfn(void *lfn, char *asciidest)
 {
 	static unsigned char uniname[CHAR_PER_LFN * 2];
 	copy_lfn_part(uniname, (struct lfn_entry *)lfn);
-	uni2ascii(uniname, asciidest, CHAR_PER_LFN);
+	return uni2ascii(uniname, asciidest, CHAR_PER_LFN);
 }
