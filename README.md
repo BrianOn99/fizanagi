@@ -14,9 +14,11 @@ recover 1 cluster file from fat32
  * search +OK+
  * dump out +OK>
  * identify ambiguity +OK+
-  * long file name ambiguity+<b>none</b>+
+  * long file name ambiguity
 * *extra*
  * recover multiple file +OK+
+ * the -r and -R has no difference: the program auto search for all 8.3name and
+   lfn +OK+
  * list deleted file +<b>none</b>+
    (what is the use if you even dont know the name of deleted file?) 
 

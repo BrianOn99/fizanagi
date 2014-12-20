@@ -24,7 +24,7 @@ void usage_exit(void)
 }
 
 
-enum {info, list, recover, long_recover} action;
+enum act {info = 1, list, recover, long_recover} action;
 char *target = NULL;
 char *dest = NULL;
 char *device = NULL;
@@ -52,7 +52,7 @@ int main(int argc, char **argv)
                 print_info(&fatfs);
         } else if (action == list) {
                 lsdir(&fatfs, fatfs.root_cluster);
-        } else if (action == recover) {
+        } else if (action == recover || action == long_recover) {
                 find_n_recover(&fatfs, fatfs.root_cluster, target, dest);
         }
 }
@@ -79,48 +79,52 @@ void print_info(struct fat_info *fatfs)
                 printf("Number of %s = %d\n", tups[i].desc, tups[i].value);
 }
 
+void setaction(enum act i)
+{
+        if (action)
+                usage_exit();
+        action = i;
+}
+
 int parse_options(int argc, char **argv)
 {
         int c;
-        if ((c = getopt(argc, argv, "d:")) == -1)
-                usage_exit();
-        else 
-                device = optarg;
+        while ((c = getopt(argc, argv, "ild:r:R:")) != -1) {
+                switch (c) {
+                        case 'd':
+                                device = optarg;
+                                break;
+                        case 'i':
+                                setaction(info);
+                                break;
+                        case 'l':
+                                setaction(list);
+                                break;
 
-        if ((c = getopt(argc, argv, "ilr:R:")) == -1)
-                usage_exit();
-        switch (c) {
-                case 'i':
-                        action = info;
-                        break;
-                case 'l':
-                        action = list;
-                        break;
+                        case 'r':
+                        case 'R':
+                                setaction(c == 'r' ? recover : long_recover);
+                                target = optarg;
 
-                case 'r':
-                case 'R':
-                        action = c == 'r' ? recover : long_recover;
-                        target = optarg;
-
-                        if ((c = getopt(argc, argv, "o:")) == -1)
-                                usage_exit();
-                        switch (c) {
-                                case 'o':
-                                        dest = optarg;
-                                        break;
-                                case '?':
+                                if ((c = getopt(argc, argv, "o:")) == -1)
                                         usage_exit();
-                        }
-                        break;
+                                switch (c) {
+                                        case 'o':
+                                                dest = optarg;
+                                                break;
+                                        case '?':
+                                                usage_exit();
+                                }
+                                break;
 
-                case '?':
-                        usage_exit();
-                default:
-                        /* Never reach here */
-                        abort();
+                        case '?':
+                                usage_exit();
+                        default:
+                                /* Never reach here */
+                                abort();
+                }
         }
 
-        if (optind != argc)
-                /* not all arguments parsed */
+        if (optind != argc || !device || !action)
                 usage_exit();
 }
