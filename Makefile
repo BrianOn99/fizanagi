@@ -3,7 +3,7 @@ vpath %.h src
 
 name = fizanagi 
 
-CPPFLAGS = -g --std=c99 -I src
+CPPFLAGS = -g -std=c99 -I src
 
 $(name): CPPFLAGS += -D_DEBUG
 $(name): main.c common.o fatinfo.o readcluster.o mylfn.o

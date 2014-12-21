@@ -6,8 +6,8 @@
 #include <stdint.h>
 
 #define ENTRY_SIZE 4  /* 32bits is 4 bytes */
-
 #define READ_N 1024
+
 #ifdef _DEBUG
 #define DEBUG(format, args...) fprintf(stderr, "[%s:%d] "format, __FILE__, __LINE__, ##args)
 #else
