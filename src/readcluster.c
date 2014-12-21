@@ -199,17 +199,17 @@ int searchname(struct fat_info *fatfs, unsigned int cluster_i,
         return found;
 }
 
-void recover(struct fat_info *fatfs, struct dirent *de, char *out_name)
+int recover(struct fat_info *fatfs, struct dirent *de, char *out_name)
 {
-        printf("recovering \"%s\" with size %d\n", out_name, de->size);
-        if (occupied(extract_clustno(de), fatfs)) {
-                printf("requested file is overritten\n");
-                return;
-        }
+        DEBUG("recovering \"%s\" with size %d\n", out_name, de->size);
+        if (occupied(extract_clustno(de), fatfs))
+                return 1;
 
-	int outfd =  open(out_name, O_RDWR | O_CREAT | O_EXCL, 0600);
-        if (outfd == -1) 
-                exit_error(1, "file already exist, or cannot create file");
+	int outfd =  open(out_name, O_RDWR | O_CREAT | O_TRUNC, 0600);
+        if (outfd == -1) {
+                printf("%s: failed to open", out_name);
+                return 2;
+        }
 
         if (de->size != 0) {
                 ftruncate(outfd, fatfs->cluster_size);
@@ -218,7 +218,7 @@ void recover(struct fat_info *fatfs, struct dirent *de, char *out_name)
                         exit_perror(1, "mmap ");
                 readcluster(fatfs, outmem, extract_clustno(de));
 #ifdef _DEBUG
-                printf("recover "); 
+                printf("recover content:"); 
                 fwrite(outmem, 10, 1, stdout);
 #endif
                 munmap(outmem, fatfs->cluster_size);
@@ -226,6 +226,7 @@ void recover(struct fat_info *fatfs, struct dirent *de, char *out_name)
         }
 
         close(outfd);
+        return 0;
 }
 
 void find_n_recover(struct fat_info *fatfs, unsigned int cluster_i,
@@ -234,10 +235,14 @@ void find_n_recover(struct fat_info *fatfs, unsigned int cluster_i,
         struct dirent found_dirents[10];
         int count = searchname(fatfs, cluster_i, find_name, found_dirents, 10);
         if (count == 0)
-                printf("nothing found\n");
-        else if (count == 1)
-		recover(fatfs, &found_dirents[0], out_name);
-        else {
+                printf("%s: error - file not found\n", find_name);
+        else if (count == 1) {
+                int ret = recover(fatfs, &found_dirents[0], out_name);
+		if (ret == 0)
+                        printf("%s: recovered\n", find_name);
+                else if (ret == 1)
+                        printf("%s: error - fail to recover\n", find_name);
+        } else {
 
 #ifndef DUMBMODE
                 printf("There is more than one file with indistinguishable name\n");
@@ -252,7 +257,7 @@ void find_n_recover(struct fat_info *fatfs, unsigned int cluster_i,
                 }
 
 #else
-                printf("ambiguious\n");
+                printf("%s: error - ambiguious\n", find_name);
 #endif
         }
 }
