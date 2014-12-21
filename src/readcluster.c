@@ -222,16 +222,17 @@ int searchname(struct fat_info *fatfs, unsigned int cluster_i,
 void recover(struct fat_info *fatfs, struct dirent *de, char *out_name)
 {
         printf("recovering \"%s\" with size %d\n", out_name, de->size);
-        if (occupied(extract_clustno(de), fatfs)) {
-                printf("requested file is overritten\n");
-                return;
-        }
 
 	int outfd =  open(out_name, O_RDWR | O_CREAT | O_EXCL, 0600);
         if (outfd == -1) 
                 exit_error(1, "file already exist, or cannot create file");
 
         if (de->size != 0) {
+                if (occupied(extract_clustno(de), fatfs)) {
+                        printf("requested file is overritten\n");
+                        return;
+                }
+
                 ftruncate(outfd, fatfs->cluster_size);
                 void *outmem = mmap(NULL, fatfs->cluster_size, PROT_WRITE, MAP_SHARED, outfd, 0);
                 if (outmem == MAP_FAILED)
@@ -240,6 +241,7 @@ void recover(struct fat_info *fatfs, struct dirent *de, char *out_name)
 #ifdef _DEBUG
                 printf("recover "); 
                 fwrite(outmem, 10, 1, stdout);
+                puts("\n");
 #endif
                 munmap(outmem, fatfs->cluster_size);
                 ftruncate(outfd, de->size);
