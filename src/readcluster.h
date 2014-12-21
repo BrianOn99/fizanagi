@@ -2,6 +2,7 @@
 #define READCL_H
 
 #include <asm/types.h>
+#include <stdint.h>
 #include <stdbool.h>
 
 struct dirent {
@@ -18,12 +19,13 @@ struct dirent {
 };
 
 struct iterstate {
-        unsigned int cluster_i;
+        ssize_t mysize;
+        uint32_t cluster_i;
         unsigned int dir_i; /* current index in dir[] , internal use */
         struct fat_info *fatfs;
         int count;
         bool allow_deleted;
-        /* zero length array, should be same size as cluster, C99 extension
+        /* zero length array, should be (same size as cluster) * 2, C99 extension
          * this will save all dirent in the cluster */
         struct dirent dir[];
 };

@@ -9,10 +9,10 @@ recover 1 cluster file from fat32
  * sub directory +OK+
  * (8.3name) & info +OK+
  * (long file name) & info +OK+
- * root more than 1 cluster +<b>none</b>+
+ * root more than 1 cluster +OK+
 * file recovery (1 cluster at root)
  * search +OK+
- * dump out +OK>
+ * dump out +OK+
  * identify ambiguity +OK+
   * long file name ambiguity
 * *extra*
@@ -30,6 +30,7 @@ sudo losetup /dev/loop0 fatsample
 sudo mount /dev/loop0 ./mnt
 sync  # flush to fatsample without umount
 ```
+
 ## Reference
 Some algorithm and structure from
 [dosfsck](http://daniel-baumann.ch/software/dosfstools/) 

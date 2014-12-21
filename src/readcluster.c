@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <stdbool.h>
+#include "fatinfo.h"
 #include "common.h"
 #include "readcluster.h"
 #include "mylfn.h"
@@ -91,7 +92,9 @@ enum dirent_type gettype(struct dirent *de)
 struct iterstate *init_iter(struct fat_info *fatfs,
                             unsigned int cluster_i, bool allow_deleted)
 {
-        struct iterstate *state = malloc(sizeof(struct iterstate) + fatfs->cluster_size);
+        ssize_t size = sizeof(struct iterstate) + fatfs->cluster_size;
+        struct iterstate *state = malloc(size);
+        state->mysize = size;
         state->allow_deleted = allow_deleted;
         state->cluster_i = cluster_i;
         state->dir_i = 0;
@@ -119,7 +122,31 @@ struct dirent *iterdirent(struct iterstate *state, char *name)
 {
         struct dirent *dir = state->dir;
         int dir_i = state->dir_i;
-        for (;dir_i < state->count; dir_i++) {
+        for (;; dir_i++) {
+                if (dir_i >= state->count ) {
+                        /* end of the cluster of the directory
+                         * check if there is next direcotory, if yes, go on
+                         */
+
+                        /* get next cluster index from current cluster index */
+                        uint32_t next_i;
+                        get_fatentries(state->fatfs, &next_i, state->cluster_i, 1);
+                        if (next_i < 2 || next_i >= EOF_INDICATOR){
+                                return NULL;  /* no more */
+                        } else if (dir_i > 10000) {
+                                exit_error(1, "the directory is very large\n" \
+                                              "FAT may have corrupted\n");
+                        } else {
+                                DEBUG("next cluster index for the diectory: %d\n", next_i);
+                                ssize_t cluster_size = state->fatfs->cluster_size;
+                                state->mysize += cluster_size;
+                                state->count += cluster_size / sizeof(struct dirent);
+                                state = realloc(state, state->mysize);
+                                readcluster(state->fatfs, &dir[dir_i], next_i);
+                                state->cluster_i = next_i;
+                        }
+                }
+
                 if (gettype(&dir[dir_i]) == LFN)
                         continue;
                 switch (dir[dir_i].name[0]) {
@@ -135,13 +162,6 @@ struct dirent *iterdirent(struct iterstate *state, char *name)
                                 return &(dir[dir_i]);
                 }
         }
-        /* 
-         * TODO:
-         * check whether the directory has next cluster,
-         * if yes, iterate again
-         * this is relatively rare, handle it if you have time
-         */
-        return NULL;  /* no more */
 }
 
 /* ********************************
@@ -202,9 +222,6 @@ int searchname(struct fat_info *fatfs, unsigned int cluster_i,
 int recover(struct fat_info *fatfs, struct dirent *de, char *out_name)
 {
         DEBUG("recovering \"%s\" with size %d\n", out_name, de->size);
-        if (occupied(extract_clustno(de), fatfs))
-                return 1;
-
 	int outfd =  open(out_name, O_RDWR | O_CREAT | O_TRUNC, 0600);
         if (outfd == -1) {
                 printf("%s: failed to open", out_name);
@@ -212,6 +229,9 @@ int recover(struct fat_info *fatfs, struct dirent *de, char *out_name)
         }
 
         if (de->size != 0) {
+                if (occupied(extract_clustno(de), fatfs))
+                        return 1;
+
                 ftruncate(outfd, fatfs->cluster_size);
                 void *outmem = mmap(NULL, fatfs->cluster_size, PROT_WRITE, MAP_SHARED, outfd, 0);
                 if (outmem == MAP_FAILED)
@@ -220,6 +240,7 @@ int recover(struct fat_info *fatfs, struct dirent *de, char *out_name)
 #ifdef _DEBUG
                 printf("recover content:"); 
                 fwrite(outmem, 10, 1, stdout);
+                puts("\n");
 #endif
                 munmap(outmem, fatfs->cluster_size);
                 ftruncate(outfd, de->size);

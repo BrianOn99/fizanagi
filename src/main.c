@@ -97,15 +97,16 @@ void print_info(struct fat_info *fatfs)
                 {"bytes per sector", fatfs->sector_size},
                 {"sectors per cluster", fatfs->cluster_size / fatfs->sector_size},
                 {"reserved sectors", fatfs->reserved_clusters},
+                {"allocated clusters", fatfs->allocated_clusters},
+                {"free clusters", fatfs->free_clusters},
 #if _DEBUG
+                {"DEBUG fat start", fatfs->fat_location},
                 {"DEBUG fatsize", fatfs->fat_size},
                 {"DEBUG sectors", fatfs->sectors},
                 {"DEBUG cluster start", fatfs->cluster_start},
                 {"DEBUG root cluster start", fatfs->cluster_start + \
                         fatfs->cluster_size * (fatfs->root_cluster - 2)},
 #endif
-                {"allocated clusters", fatfs->allocated_clusters},
-                {"free clusters", fatfs->free_clusters},
         };
 
         for (int i=0; i < sizeof(tups)/sizeof(tups[0]); i++)
