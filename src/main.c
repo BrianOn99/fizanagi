@@ -41,7 +41,7 @@ int is8d3(const char *string)
     int    status;
     regex_t    re;
 
-    if (regcomp(&re, "^[A-Z]{,8}(\\.[A-Z]{,3})?$", REG_EXTENDED|REG_NOSUB) != 0) {
+    if (regcomp(&re, "^[A-Z]{1,8}(\\.[A-Z]{1,3})?$", REG_EXTENDED|REG_NOSUB) != 0) {
         return(0);      /* Report error. */
     }
     status = regexec(&re, string, (size_t) 0, NULL, 0);
