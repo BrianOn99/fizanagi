@@ -297,29 +297,33 @@ void lsdir(struct fat_info *fatfs, unsigned int cluster_i)
 {
         struct dirent *nextdirent;
         struct iterstate *iterator = init_iter(fatfs, cluster_i, false);
-        char lfnstr[MAX_LFN_LEN];
-        char countstr[3];
+        char lfnstr[MAX_LFN_LEN + 3];
+        char countstr[4];
         char clusstr[10];
-        char name8d3[11];
+        char name8d3[14];
         int  n;
 
-        printf("%4s%-15s%-10s%-10s%-6s%-20s\n",
-               "", "8.3name", "size", "#cluster", "type", "lfn");
-
-        int i = 0;
+        int i = 1;
         nextdirent = iterdirent(iterator, lfnstr);
         for (/**/; nextdirent; nextdirent = iterdirent(iterator, lfnstr)) {
 
                 extract_8d3name(nextdirent, name8d3);
 
+                if (gettype(nextdirent) == DIRECTORY) {
+                        strcat(name8d3, "\\");
+                        strcat(lfnstr, "\\");
+                }
+                strcat(name8d3, ",");
+                strcat(lfnstr, ",");
+
                 snprintf(countstr, sizeof(countstr), "%d,", i++);
                 if (n = extract_clustno(nextdirent))
-                        snprintf(clusstr, sizeof(clusstr), "%-10d,", n);
+                        snprintf(clusstr, sizeof(clusstr), "%d", n);
                 else
-                        snprintf(clusstr, sizeof(clusstr), "%-10s,", "none");
+                        snprintf(clusstr, sizeof(clusstr), "%s", "none");
 
-                printf("%-4s%-15s%-10d%-10s%-6d%-20s\n", \
-                        countstr, name8d3, nextdirent->size, clusstr, gettype(nextdirent), lfnstr);
+                printf("%s %s %s %d, %s\n", \
+                        countstr, name8d3, lfnstr, nextdirent->size, clusstr);
         }
 
         free(iterator);
