@@ -167,19 +167,6 @@ struct dirent *iterdirent(struct iterstate *state, char *name)
  * End iterator section
  * ******************************** */
 
-int skipstrcmp(const char *s1, const char *s2, int n)
-{
-        int m = n;
-        for ( ; *s1 == *s2; s1++, s2++, n--) {
-                if (m == 0) {
-                        m = n;
-                        continue;
-                } if (*s1 == '\0')
-                        return 0;
-        }
-        return 1;
-}
-
 int searchname(struct fat_info *fatfs, unsigned int cluster_i,
                   char *given_name, struct dirent back_dirents[], int len)
 {
@@ -198,7 +185,7 @@ int searchname(struct fat_info *fatfs, unsigned int cluster_i,
 
                 int match;
                 if (lfnstr[0]) {
-                        match = (skipstrcmp(lfnstr+1, given_name+1, CHAR_PER_LFN) == 0);
+                        match = (strcmp(lfnstr, given_name) == 0);
                 } else {
                         static char name8d3[11];
                         extract_8d3name(nextdirent, name8d3);
