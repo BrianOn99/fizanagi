@@ -89,9 +89,11 @@ void setaction(enum act i)
 int parse_options(int argc, char **argv)
 {
         int c;
-        while ((c = getopt(argc, argv, "ild:r:R:")) != -1) {
+        while ((c = getopt(argc, argv, "ild:r:R:o:")) != -1) {
                 switch (c) {
                         case 'd':
+                                if (device)
+                                        usage_exit();
                                 device = optarg;
                                 break;
                         case 'i':
@@ -100,21 +102,16 @@ int parse_options(int argc, char **argv)
                         case 'l':
                                 setaction(list);
                                 break;
+                        case 'o':
+                                if (dest)
+                                        usage_exit();
+                                dest = optarg;
+                                break;
 
                         case 'r':
                         case 'R':
                                 setaction(c == 'r' ? recover : long_recover);
                                 target = optarg;
-
-                                if ((c = getopt(argc, argv, "o:")) == -1)
-                                        usage_exit();
-                                switch (c) {
-                                        case 'o':
-                                                dest = optarg;
-                                                break;
-                                        case '?':
-                                                usage_exit();
-                                }
                                 break;
 
                         case '?':
@@ -125,6 +122,8 @@ int parse_options(int argc, char **argv)
                 }
         }
 
-        if (optind != argc || !device || !action)
+        if (optind != argc || !device || !action || \
+            ((action == recover) && !dest)) {
                 usage_exit();
+        }
 }
