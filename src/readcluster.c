@@ -186,7 +186,7 @@ int skipstrcmp(const char *s1, const char *s2, int n)
 }
 
 int searchname(struct fat_info *fatfs, unsigned int cluster_i,
-                  char *given_name, struct dirent back_dirents[], int len)
+                  char *given_name, struct dirent back_dirents[], int len, enum nametype type)
 {
         struct dirent *nextdirent = NULL;
         struct iterstate *iterator = init_iter(fatfs, cluster_i, true);
@@ -200,10 +200,10 @@ int searchname(struct fat_info *fatfs, unsigned int cluster_i,
                 if (gettype(nextdirent) != NORMALFILE)
                         continue;
 
-                int match;
-                if (lfnstr[0]) {
+                int match = 0;
+                if (lfnstr[0] && type == LN) {
                         match = (skipstrcmp(lfnstr+1, given_name+1, CHAR_PER_LFN) == 0);
-                } else {
+                } else if (type == SN) {
                         static char name8d3[11];
                         extract_8d3name(nextdirent, name8d3);
                         match = (strcmp(name8d3+1, given_name+1) == 0);
@@ -260,10 +260,10 @@ int recover(struct fat_info *fatfs, struct dirent *de, char *out_name)
 }
 
 void find_n_recover(struct fat_info *fatfs, unsigned int cluster_i,
-                          char *find_name, char *out_name)
+                          char *find_name, char *out_name, enum nametype type)
 {
         struct dirent found_dirents[10];
-        int count = searchname(fatfs, cluster_i, find_name, found_dirents, 10);
+        int count = searchname(fatfs, cluster_i, find_name, found_dirents, 10, type);
         if (count == 0)
                 printf("%s: error - file not found\n", find_name);
         else if (count == 1) {
@@ -309,8 +309,8 @@ void lsdir(struct fat_info *fatfs, unsigned int cluster_i)
                 extract_8d3name(nextdirent, name8d3);
 
                 if (gettype(nextdirent) == DIRECTORY) {
-                        strcat(name8d3, "\\");
-                        strcat(lfnstr, "\\");
+                        strcat(name8d3, "/");
+                        strcat(lfnstr, "/");
                 }
                 strcat(name8d3, ",");
                 strcat(lfnstr, ",");

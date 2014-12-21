@@ -31,6 +31,7 @@ struct iterstate {
 };
 
 enum dirent_type { LFN, DIRECTORY, NORMALFILE, NOTCARE };
+enum nametype { LN, SN };
 
 struct iterstate *init_iter(struct fat_info *fatfs,
                             unsigned int cluster_i, bool allow_deleted);
@@ -38,6 +39,6 @@ struct dirent *iterdirent(struct iterstate *state, char *name);
 void readcluster(struct fat_info *fatfs, void *buf, unsigned int index);
 void lsdir(struct fat_info *fatfs, unsigned int cluster_i);
 void find_n_recover(struct fat_info *fatfs, unsigned int cluster_i,
-                          char *find_name, char *out_name);
+                          char *find_name, char *out_name, enum nametype type);
 
 #endif
