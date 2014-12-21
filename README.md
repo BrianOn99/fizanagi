@@ -3,6 +3,20 @@
 ## Goal
 recover 1 cluster file from fat32
 
+## Compile
+give sane output:
+```sh
+make
+```
+if you want a dumb program that comform to csci3150 submission guideline:
+```sh
+make dumb
+```
+give debug message:
+```sh
+make debug
+```
+
 ## Functionality
 * show file system info +OK+
 * list root directory 
