@@ -63,7 +63,7 @@ char *strcpyX20(char *dest, char *src, int maxlen)
 /*
  * extract the file name from a directory entry.
  */
-int extract_8d3name(struct dirent *de, char *name)
+void extract_8d3name(struct dirent *de, char *name)
 {
         char *destend = strcpyX20(name, de->name, 8);
 
@@ -74,7 +74,6 @@ int extract_8d3name(struct dirent *de, char *name)
         }
 
         *destend = '\0';
-        return 0;
 }
 
 unsigned int extract_clustno(struct dirent *de)
