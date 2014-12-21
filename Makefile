@@ -5,9 +5,12 @@ name = fizanagi
 
 CPPFLAGS = -g -std=c99 -I src
 
-$(name): CPPFLAGS += -D_DEBUG
 $(name): main.c common.o fatinfo.o readcluster.o mylfn.o
 	gcc $(CPPFLAGS) $^ -o $@
+
+debug: CPPFLAGS += -D_DEBUG
+debug: main.c common.o fatinfo.o readcluster.o mylfn.o
+	gcc $(CPPFLAGS) $^ -o $(addsuffix _debug, $(name))
 
 dumb: CPPFLAGS += -DDUMBMODE
 dumb: main.c common.o fatinfo.o readcluster.o mylfn.o
@@ -24,4 +27,5 @@ mylfn.o: mylfn.h
 .PHONY: clean
 
 clean:
-	@rm *.o $(name) $(addsuffix _dumb, $(name)) 2> /dev/null || true
+	@rm *.o $(name) $(addsuffix _dumb, $(name)) $(addsuffix _debug, $(name)) \
+		2> /dev/null || true

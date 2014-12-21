@@ -44,6 +44,11 @@ bool occupied(uint32_t cluster_i, struct fat_info *fatfs)
         return false;
 }
 
+int dirent_deleted(struct dirent *de)
+{
+	return (de->name[0] == (unsigned char) '\xe5');
+}
+
 /*
  * copy (inclusive) until 0x20 is met, return src pointer to 0x20.
  */
@@ -191,9 +196,8 @@ int searchname(struct fat_info *fatfs, unsigned int cluster_i,
 
         while (1) {
                 nextdirent = iterdirent(iterator, lfnstr);
-                if (!nextdirent) {
+                if (!nextdirent)
                         break;
-                }
                 if (gettype(nextdirent) != NORMALFILE)
                         continue;
 
@@ -207,6 +211,12 @@ int searchname(struct fat_info *fatfs, unsigned int cluster_i,
                 }
 
                 if (match) {
+                        if (!dirent_deleted(nextdirent)) {
+#ifndef DUMBMODE
+                                printf("A file with similar name not deleted\n");
+#endif
+                                continue;
+                        }
                         /* matched (maybe deleted) */
                         DEBUG("found file\n");
                         if (found >= len) break;
@@ -281,11 +291,6 @@ void find_n_recover(struct fat_info *fatfs, unsigned int cluster_i,
                 printf("%s: error - ambiguious\n", find_name);
 #endif
         }
-}
-
-int dirent_deleted(struct dirent *de)
-{
-	return (de->name[0] == (unsigned char) '\xe5');
 }
 
 void lsdir(struct fat_info *fatfs, unsigned int cluster_i)
