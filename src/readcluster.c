@@ -297,10 +297,14 @@ void lsdir(struct fat_info *fatfs, unsigned int cluster_i)
 
                 if (gettype(nextdirent) == DIRECTORY) {
                         strcat(name8d3, "/");
-                        strcat(lfnstr, "/");
+                        if (lfnstr[0])
+                                strcat(lfnstr, "/, ");
+                } else {
+                        if (lfnstr[0])
+                                strcat(lfnstr, ", ");
                 }
+
                 strcat(name8d3, ",");
-                strcat(lfnstr, ",");
 
                 snprintf(countstr, sizeof(countstr), "%d,", i++);
                 if (n = extract_clustno(nextdirent))
@@ -308,7 +312,7 @@ void lsdir(struct fat_info *fatfs, unsigned int cluster_i)
                 else
                         snprintf(clusstr, sizeof(clusstr), "%s", "none");
 
-                printf("%s %s %s %d, %s\n", \
+                printf("%s %s %s%d, %s\n", \
                         countstr, name8d3, lfnstr, nextdirent->size, clusstr);
         }
 
