@@ -7,10 +7,6 @@
 #include "fatinfo.h"
 #include "readcluster.h"
 
-#ifdef DUMBMODE
-#include <regex.h>
-#endif
-
 int parse_options(int argc, char **argv);
 void print_info(struct fat_info *fatfs);
 
@@ -20,40 +16,17 @@ void usage_exit(void)
                "Usage: ./recover -d [device filename] [other arguments]\n"
                "-i                        Print boot sector information\n"
                "-l                        List all the directory entries\n"
-               "-r target -o dest         File recovery with 8.3 filename\n"
-               "-R target -o dest         File recovery with long filename\n",
+               "-r target -o dest         File recovery with filename (auto handle 8.3 name)\n",
                stdout);
 
         exit(EXIT_FAILURE);
 }
 
 
-enum act {info = 1, list, recover, long_recover} action;
+enum act {info = 1, list, recover} action;
 char *target = NULL;
 char *dest = NULL;
 char *device = NULL;
-
-#ifdef DUMBMODE
-
-/* recipe modified form opengroup.org */
-int is8d3(const char *string)
-{
-    int    status;
-    regex_t    re;
-
-    if (regcomp(&re, "^[A-Z]{1,8}(\\.[A-Z]{1,3})?$", REG_EXTENDED|REG_NOSUB) != 0) {
-        return(0);      /* Report error. */
-    }
-    status = regexec(&re, string, (size_t) 0, NULL, 0);
-    regfree(&re);
-
-    if (status != 0) {
-        return(0);      /* Report error. */
-    }
-    return(1);
-}
-
-#endif
 
 int main(int argc, char **argv)
 {
@@ -78,14 +51,7 @@ int main(int argc, char **argv)
                 print_info(&fatfs);
         } else if (action == list) {
                 lsdir(&fatfs, fatfs.root_cluster);
-        } else if (action == recover || action == long_recover) {
-#ifdef DUMBMODE
-                DEBUG("action %d, 8d3 %d\n", action, is8d3(target));
-                if ((action == recover) && !is8d3(target))
-                        exit_error(2, "the target is not 8.3name");
-                if ((action == long_recover) && is8d3(target))
-                        exit_error(2, "the target is not long file name");
-#endif
+        } else if (action == recover) {
                 find_n_recover(&fatfs, fatfs.root_cluster, target, dest);
         }
 }
@@ -123,7 +89,7 @@ void setaction(enum act i)
 int parse_options(int argc, char **argv)
 {
         int c;
-        while ((c = getopt(argc, argv, "ild:r:R:o:")) != -1) {
+        while ((c = getopt(argc, argv, "ild:r:o:")) != -1) {
                 switch (c) {
                         case 'd':
                                 if (device)
@@ -143,8 +109,7 @@ int parse_options(int argc, char **argv)
                                 break;
 
                         case 'r':
-                        case 'R':
-                                setaction(c == 'r' ? recover : long_recover);
+                                setaction(recover);
                                 target = optarg;
                                 break;
 
