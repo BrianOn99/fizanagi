@@ -33,7 +33,7 @@ make debug
  * recover multiple file +OK+
  * the -r and -R has no difference: the program auto search for all 8.3name and
    lfn +OK+
- * list deleted file +<b>none</b>+
+ * list deleted file +OK+
    (what is the use if you even dont know the name of deleted file?) 
 
 ## Handy command
@@ -50,6 +50,10 @@ Some algorithm and structure from
 [dosfsck](http://daniel-baumann.ch/software/dosfstools/) 
 
 Thus it is GPL3
+
+## Coders
+Chiu Yue Chun
+He ZiXuan
 
 ## 感想
 食屎啦BillGate$
